@@ -1,33 +1,39 @@
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const { XMLHttpRequest } = require("xmlhttprequest");
 
-var A = 'https://rickandmortyapi.com/api/character/';
-var B = new XMLHttpRequest();
-
-function X(a, b) {
-  B.onreadystatechange = function (e) {
-    if (B.readyState == '4') {
-      if (B.status === '200')
-        b(null, B.responseText);
-      else return b(a);
-    }
-    else return b(a);
-  };
-  B.open('GET', a, false);
-  B.send();
+const url = 'https://rickandmortyapi.com/api/character/';  
+// Cambio de nombre de las variables A, B y X a url, xhr y apiCall para mejorar la legibilidad del código
+const apiCall = (url) => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest(); // Uso de una nueva instancia para cada petición
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState == 4) {
+        if (xhr.status === 200)
+          resolve(JSON.parse(xhr.responseText));
+        else
+          reject(new Error(`Error ${xhr.status}`));
+      }
+    };
+    xhr.open('GET', url, true); // Se cambia el tercer parámetro a true para que se realice una petición asíncrona
+    xhr.send();
+  });
 };
 
-X(A, function (c, d) {
-  if (c) return console.error('Error' + ' ' + c);
-  console.log('Primer Llamado...');
-  X(A + d.results[0].id, function (e, f) {
-    if (e) return console.error('Error' + ' ' + e);
+const fetchData = async () => { // Uso de async/await
+  try {
+    const characters = await apiCall(url);
+    console.log('Primer Llamado...');
+    console.log(`Personajes: ${characters.info.count}`);
+
+    const character = await apiCall(`${url}${characters.results[0].id}`);
     console.log('Segundo Llamado...');
-    X(JSON.parse(f).origin.url, function (g, h) {
-      if (g) return console.error('Error' + ' ' + g);
-      console.log('Tercer Llamado...');
-      console.log('Personajes:' + ' ' + JSON.parse(d).info.count);
-      console.log('Primer Personaje:' + ' ' + JSON.parse(f).name);
-      console.log('Dimensión:' + ' ' + JSON.parse(h).dimension);
-    });
-  });
-});
+    console.log(`Primer Personaje: ${character.name}`);
+
+    const origin = await apiCall(character.origin.url);
+    console.log('Tercer Llamado...');
+    console.log(`Dimensión: ${origin.dimension}`);
+  } catch (error) { // Los errores se centralizan en un solo bloque
+    console.error(`Error ${error}`);
+  }
+};
+
+fetchData();
